@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#f6f7f9; color:#0f172a; }
+    .wrap { max-width: 960px; margin: 3rem auto; background:#fff; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+    h1 { margin-top:0; font-size: 1.5rem; }
+    nav a { color:#6366f1; text-decoration:none; }
+    .muted { color:#475569; font-size:.95rem; }
+    table { width:100%; border-collapse: collapse; margin-top:1rem; }
+    th, td { text-align:left; padding:.75rem; border-bottom:1px solid #e2e8f0; vertical-align: top; }
+    th { font-size:.9rem; color:#475569; }
+    .controls { display:flex; gap:.5rem; align-items:center; }
+    .btn { padding:.5rem .8rem; border:1px solid #cbd5e1; border-radius:.5rem; background:#f8fafc; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="muted"><a href="/">← Back to form</a></nav>
+    <div class="controls">
+      <h1 style="flex:1">People Report</h1>
+      <button class="btn" id="refresh">Refresh</button>
+    </div>
+    <div class="muted" id="status"></div>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Address</th><th>City</th><th>Created</th></tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <script>
+    const rowsEl = document.getElementById('rows');
+    const statusEl = document.getElementById('status');
+    const refreshBtn = document.getElementById('refresh');
+
+    function setStatus(msg){ statusEl.textContent = msg || ''; }
+
+    async function load() {
+      setStatus('Loading…');
+      try {
+        const res = await fetch('/api/report');
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'Request failed');
+        const rows = payload.rows || [];
+        rowsEl.innerHTML = rows.length
+          ? rows.map(r => `
+              <tr>
+                <td>${r.id}</td>
+                <td>${escapeHtml(r.name)}</td>
+                <td>${escapeHtml(r.address)}</td>
+                <td>${escapeHtml(r.city)}</td>
+                <td>${new Date(r.created_at).toLocaleString()}</td>
+              </tr>`).join('')
+          : `<tr><td colspan="5" class="muted">No data yet.</td></tr>`;
+        setStatus('');
+      } catch (err) {
+        rowsEl.innerHTML = `<tr><td colspan="5" class="muted">Error loading data.</td></tr>`;
+        setStatus(err.message || 'Error');
+      }
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
+
+    refreshBtn.addEventListener('click', load);
+    load();
+  </script>
+</body>
+</html>
