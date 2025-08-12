@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Data Entry</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#f6f7f9; color:#0f172a; }
+    .wrap { max-width: 680px; margin: 6rem auto; background:#fff; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+    h1 { margin-top:0; font-size: 1.5rem; }
+    label { display:block; font-weight:600; margin:.75rem 0 .25rem; }
+    input { width:100%; padding:.75rem; border:1px solid #cbd5e1; border-radius:.75rem; font-size:1rem; }
+    input:focus { outline: none; border-color:#6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.2); }
+    .row { display:grid; gap:1rem; grid-template-columns: 1fr 1fr; }
+    .btn { margin-top:1rem; padding:.8rem 1rem; border:0; border-radius:.75rem; font-weight:600; cursor:pointer; }
+    .primary{ background:#6366f1; color:#fff; }
+    .muted { color:#475569; font-size:.95rem; }
+    .status { margin-top:1rem; min-height:1.5rem; font-size:.95rem; }
+    .ok { color:#16a34a; } .err { color:#b91c1c; }
+    nav a { color:#6366f1; text-decoration:none; }
+    nav { margin-bottom:1rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="muted">View the <a href="/report.html">report</a></nav>
+    <h1>Add a record</h1>
+    <form id="entryForm" novalidate>
+      <label for="name">Name</label>
+      <input id="name" name="name" maxlength="200" required placeholder="Jane Doe" />
+
+      <label for="address">Address</label>
+      <input id="address" name="address" maxlength="300" required placeholder="123 Main St, Apt 4B" />
+
+      <div class="row">
+        <div>
+          <label for="city">City</label>
+          <input id="city" name="city" maxlength="120" required placeholder="Boston" />
+        </div>
+      </div>
+
+      <button class="btn primary" type="submit">Save</button>
+      <div class="status" id="status"></div>
+    </form>
+    <p class="muted">Your data is securely stored in a managed Postgres database (Supabase).</p>
+  </div>
+
+  <script>
+    const form = document.getElementById('entryForm');
+    const statusEl = document.getElementById('status');
+
+    function setStatus(msg, ok=false) {
+      statusEl.textContent = msg;
+      statusEl.className = 'status ' + (ok ? 'ok' : 'err');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setStatus('');
+
+      const name = form.name.value.trim();
+      const address = form.address.value.trim();
+      const city = form.city.value.trim();
+
+      if (!name || !address || !city) {
+        setStatus('Please fill out all fields.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, address, city })
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'Request failed');
+        setStatus('Saved!', true);
+        form.reset();
+      } catch (err) {
+        setStatus(err.message || 'Something went wrong.');
+      }
+    });
+  </script>
+</body>
+</html>
